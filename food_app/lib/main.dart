@@ -31,18 +31,14 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   DateTime? selectedDate;
-  Future<void> _selectDate() async {
+  Future<DateTime?> _selectDate() async {
     final DateTime? pickedDate = await showDatePicker(
       context: context,
       initialDate: DateTime.now(),
       firstDate: DateTime.now(),
       lastDate: DateTime(2035),
     );
-
-    setState(() {
-      selectedDate = pickedDate;
-    });
-    print(selectedDate);
+    return pickedDate;
   }
 
   Future<void> addFood() async {
@@ -80,48 +76,63 @@ class _HomePageState extends State<HomePage> {
       builder: (BuildContext context) {
         return AlertDialog(
           title: const Text('Add food'),
-          content: Form(
-            child: Padding(
-              padding: EdgeInsetsGeometry.all(10.0),
-              child: Column(
-                children: [
-                  TextFormField(
-                    decoration: const InputDecoration(
-                      labelText: 'Name of the food',
-                    ),
-                  ),
-                  SizedBox(height: 25),
-                  SizedBox(
-                    width: 210,
-                    child: DropdownMenu(
-                      dropdownMenuEntries: <DropdownMenuEntry<String>>[
-                        DropdownMenuEntry(value: 'Meat', label: 'Meat'),
-                        DropdownMenuEntry(
-                          value: 'Vegetable',
-                          label: 'Vegetable',
+          content: StatefulBuilder(
+            builder: (context, setState) {
+              return Form(
+                child: Padding(
+                  padding: EdgeInsetsGeometry.all(10.0),
+                  child: Column(
+                    children: [
+                      TextFormField(
+                        decoration: const InputDecoration(
+                          labelText: 'Name of the food',
                         ),
-                        DropdownMenuEntry(value: 'Grain', label: 'Grain'),
-                        DropdownMenuEntry(value: 'Seafood', label: 'Seafood'),
-                        DropdownMenuEntry(value: 'Dairy', label: 'Dairy'),
-                        DropdownMenuEntry(
-                          value: 'Seasoning',
-                          label: 'Seasoning',
+                      ),
+                      SizedBox(height: 25),
+                      SizedBox(
+                        width: 210,
+                        child: DropdownMenu(
+                          dropdownMenuEntries: <DropdownMenuEntry<String>>[
+                            DropdownMenuEntry(value: 'Meat', label: 'Meat'),
+                            DropdownMenuEntry(
+                              value: 'Vegetable',
+                              label: 'Vegetable',
+                            ),
+                            DropdownMenuEntry(value: 'Grain', label: 'Grain'),
+                            DropdownMenuEntry(
+                              value: 'Seafood',
+                              label: 'Seafood',
+                            ),
+                            DropdownMenuEntry(value: 'Dairy', label: 'Dairy'),
+                            DropdownMenuEntry(
+                              value: 'Seasoning',
+                              label: 'Seasoning',
+                            ),
+                          ],
+                          label: const Text('Category'),
                         ),
-                      ],
-                      label: const Text('Category'),
-                    ),
+                      ),
+                      OutlinedButton(
+                        onPressed: () async {
+                          final pickedDate = await _selectDate();
+
+                          if (pickedDate != null) {
+                            setState(() {
+                              selectedDate = pickedDate;
+                            });
+                          }
+                        },
+                        child: Text(
+                          selectedDate != null
+                              ? '${selectedDate!.day}/${selectedDate!.month}/${selectedDate!.year}'
+                              : 'Select expiry date',
+                        ),
+                      ),
+                    ],
                   ),
-                  OutlinedButton(
-                    onPressed: () => _selectDate(),
-                    child: Text(
-                      selectedDate != null
-                          ? '${selectedDate!.day}/${selectedDate!.month}/${selectedDate!.year}'
-                          : 'Select expirary date',
-                    ),
-                  ),
-                ],
-              ),
-            ),
+                ),
+              );
+            },
           ),
         );
       },
