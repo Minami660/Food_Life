@@ -82,6 +82,7 @@ class _HomePageState extends State<HomePage> {
                 child: Padding(
                   padding: EdgeInsetsGeometry.all(10.0),
                   child: Column(
+                    //mainAxisSize: MainAxisSize.min,
                     children: [
                       TextFormField(
                         decoration: const InputDecoration(
@@ -127,6 +128,38 @@ class _HomePageState extends State<HomePage> {
                               ? '${selectedDate!.day}/${selectedDate!.month}/${selectedDate!.year}'
                               : 'Select expiry date',
                         ),
+                      ),
+                      Row(
+                        children: [
+                          Expanded(
+                            //width: 100,
+                            child: TextFormField(
+                              decoration: const InputDecoration(
+                                labelText: 'Amount of Food',
+                              ),
+                            ),
+                          ),
+                          SizedBox(width: 10),
+                          Expanded(
+                            child: DropdownMenu(
+                              dropdownMenuEntries: <DropdownMenuEntry<String>>[
+                                DropdownMenuEntry(value: 'Kg', label: 'Kg'),
+                                DropdownMenuEntry(
+                                  value: 'Lb(s)',
+                                  label: 'Lb(s)',
+                                ),
+                                DropdownMenuEntry(value: 'Gram', label: 'Gram'),
+                                DropdownMenuEntry(value: 'ml', label: 'ml'),
+                                DropdownMenuEntry(value: 'Case', label: 'Case'),
+                                DropdownMenuEntry(
+                                  value: 'Count',
+                                  label: 'Count',
+                                ),
+                              ],
+                              label: const Text('Unit'),
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
