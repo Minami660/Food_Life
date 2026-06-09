@@ -161,6 +161,19 @@ class _HomePageState extends State<HomePage> {
                           ),
                         ],
                       ),
+                      Row(
+                        children: [
+                          SizedBox(width: 80),
+                          ElevatedButton(
+                            onPressed: () => print('Save button pressed'),
+                            child: const Text('Save'),
+                          ),
+                          ElevatedButton(
+                            onPressed: () => print('Cancel button pressed'),
+                            child: const Text('Cancel'),
+                          ),
+                        ],
+                      ),
                     ],
                   ),
                 ),
