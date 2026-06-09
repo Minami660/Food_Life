@@ -30,6 +30,7 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  final foodNameController = TextEditingController();
   DateTime? selectedDate;
   Future<DateTime?> _selectDate() async {
     final DateTime? pickedDate = await showDatePicker(
@@ -88,6 +89,7 @@ class _HomePageState extends State<HomePage> {
                         decoration: const InputDecoration(
                           labelText: 'Name of the food',
                         ),
+                        controller: foodNameController,
                       ),
                       SizedBox(height: 25),
                       SizedBox(
@@ -165,7 +167,8 @@ class _HomePageState extends State<HomePage> {
                         children: [
                           SizedBox(width: 80),
                           ElevatedButton(
-                            onPressed: () => print('Save button pressed'),
+                            onPressed: () =>
+                                print(foodNameController.value.text),
                             child: const Text('Save'),
                           ),
                           ElevatedButton(
