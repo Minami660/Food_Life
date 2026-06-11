@@ -34,6 +34,7 @@ class _HomePageState extends State<HomePage> {
   final foodAmountController = TextEditingController();
   DateTime? selectedDate;
   String? selectedCategory;
+  String? selectedUnit;
   Future<DateTime?> _selectDate() async {
     final DateTime? pickedDate = await showDatePicker(
       context: context,
@@ -169,6 +170,13 @@ class _HomePageState extends State<HomePage> {
                                 ),
                               ],
                               label: const Text('Unit'),
+                              onSelected: (value) {
+                                if (value != null) {
+                                  setState(() {
+                                    selectedUnit = value;
+                                  });
+                                }
+                              },
                             ),
                           ),
                         ],
@@ -177,7 +185,7 @@ class _HomePageState extends State<HomePage> {
                         children: [
                           SizedBox(width: 80),
                           ElevatedButton(
-                            onPressed: () => print(selectedCategory),
+                            onPressed: () => print(selectedUnit),
                             child: const Text('Save'),
                           ),
                           ElevatedButton(
