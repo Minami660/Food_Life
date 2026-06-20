@@ -35,6 +35,7 @@ class _HomePageState extends State<HomePage> {
   DateTime? selectedDate;
   String? selectedCategory;
   String? selectedUnit;
+  final foodNotecontroller = TextEditingController();
   Future<DateTime?> _selectDate() async {
     final DateTime? pickedDate = await showDatePicker(
       context: context,
@@ -181,11 +182,16 @@ class _HomePageState extends State<HomePage> {
                           ),
                         ],
                       ),
+                      SizedBox(height: 25),
+                      TextFormField(
+                        decoration: const InputDecoration(labelText: 'Note'),
+                        controller: foodNotecontroller,
+                      ),
                       Row(
                         children: [
                           SizedBox(width: 80),
                           ElevatedButton(
-                            onPressed: () => print(selectedUnit),
+                            onPressed: () => print(foodNotecontroller.text),
                             child: const Text('Save'),
                           ),
                           ElevatedButton(
