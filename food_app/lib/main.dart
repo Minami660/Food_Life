@@ -58,6 +58,24 @@ class _HomePageState extends State<HomePage> {
     print('Inserted!');
   }
 
+  Future<void> saveFood() async {
+    final food = {
+      'name': foodNameController.text,
+      'category': selectedCategory,
+      'expiry_date': selectedDate?.toIso8601String(),
+      'amount': double.tryParse(foodAmountController.text),
+      'unit': selectedUnit,
+      'note': foodNotecontroller.text,
+    };
+    final supabase = Supabase.instance.client;
+    try {
+      await supabase.from('food').insert(food);
+      print('inserted!');
+    } catch (e) {
+      print('ERROR: $e');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -191,43 +209,35 @@ class _HomePageState extends State<HomePage> {
                         children: [
                           SizedBox(width: 80),
                           ElevatedButton(
-                            onPressed: () async {
-                              final food = {
-                                'name': foodNameController.text,
-                                'category': selectedCategory,
-                                'expiry_date': selectedDate,
-                                'amount': double.tryParse(
-                                  foodAmountController.text,
-                                ),
-                                'unit': selectedUnit,
-                                'note': foodNotecontroller.text,
-                              };
-                              print('''
-                                Name: ${foodNameController.text}
-                                Category: $selectedCategory
-                                Date: $selectedDate
-                                Amount: ${foodAmountController.text}
-                                Unit: $selectedUnit
-                                Note: ${foodNotecontroller.text}
-                                  ''');
-                              final supabase = Supabase.instance.client;
-                              try {
-                                await supabase.from('food').insert({
-                                  'name': foodNameController.text,
-                                  'category': selectedCategory,
-                                  'expiry_date': selectedDate
-                                      ?.toIso8601String(),
-                                  'amount': double.tryParse(
-                                    foodAmountController.text,
-                                  ),
-                                  'unit': selectedUnit,
-                                  'note': foodNotecontroller.text,
-                                });
-                                print('inserted!');
-                              } catch (e) {
-                                print('ERROR: $e');
-                              }
-                            },
+                            onPressed: saveFood,
+                            //() async {
+
+                            // final food = {
+                            //   'name': foodNameController.text,
+                            //   'category': selectedCategory,
+                            //   'expiry_date': selectedDate?.toIso8601String(),
+                            //   'amount': double.tryParse(
+                            //     foodAmountController.text,
+                            //   ),
+                            //   'unit': selectedUnit,
+                            //   'note': foodNotecontroller.text,
+                            // };
+                            // print('''
+                            //   Name: ${foodNameController.text}
+                            //   Category: $selectedCategory
+                            //   Date: $selectedDate
+                            //   Amount: ${foodAmountController.text}
+                            //   Unit: $selectedUnit
+                            //   Note: ${foodNotecontroller.text}
+                            //     ''');
+                            // final supabase = Supabase.instance.client;
+                            // try {
+                            //   await supabase.from('food').insert(food);
+                            //   print('inserted!');
+                            // } catch (e) {
+                            //   print('ERROR: $e');
+                            // }
+                            //},
                             child: const Text('Save'),
                           ),
                           ElevatedButton(
