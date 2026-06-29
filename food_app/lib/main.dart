@@ -68,12 +68,8 @@ class _HomePageState extends State<HomePage> {
       'note': foodNotecontroller.text,
     };
     final supabase = Supabase.instance.client;
-    try {
-      await supabase.from('food').insert(food);
-      print('inserted!');
-    } catch (e) {
-      print('ERROR: $e');
-    }
+    await supabase.from('food').insert(food);
+    print('inserted!');
   }
 
   @override
@@ -209,7 +205,25 @@ class _HomePageState extends State<HomePage> {
                         children: [
                           SizedBox(width: 80),
                           ElevatedButton(
-                            onPressed: saveFood,
+                            onPressed: () async {
+                              try {
+                                await saveFood();
+                                foodNameController.clear();
+                                foodAmountController.clear();
+                                foodNotecontroller.clear();
+                                selectedCategory = null;
+                                selectedDate = null;
+                                selectedUnit = null;
+                                Navigator.pop(context);
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Food saved successfully!'),
+                                  ),
+                                );
+                              } catch (e) {
+                                print('ERROR: $e');
+                              }
+                            },
                             //() async {
 
                             // final food = {
