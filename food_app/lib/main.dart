@@ -30,11 +30,13 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  final _formKey = GlobalKey<FormState>();
   final foodNameController = TextEditingController();
   final foodAmountController = TextEditingController();
   DateTime? selectedDate;
   String? selectedCategory;
   String? selectedUnit;
+  String? unitError;
   final foodNotecontroller = TextEditingController();
   Future<DateTime?> _selectDate() async {
     final DateTime? pickedDate = await showDatePicker(
@@ -98,6 +100,7 @@ class _HomePageState extends State<HomePage> {
           content: StatefulBuilder(
             builder: (context, setState) {
               return Form(
+                key: _formKey,
                 child: Padding(
                   padding: EdgeInsetsGeometry.all(10.0),
                   child: Column(
@@ -108,6 +111,13 @@ class _HomePageState extends State<HomePage> {
                           labelText: 'Name of the food',
                         ),
                         controller: foodNameController,
+                        validator: (foodNameController) {
+                          if (foodNameController == null ||
+                              foodNameController.isEmpty) {
+                            return 'Please enter the name of food.';
+                          }
+                          return null;
+                        },
                       ),
                       SizedBox(height: 25),
                       SizedBox(
@@ -165,6 +175,21 @@ class _HomePageState extends State<HomePage> {
                                 labelText: 'Amount of Food',
                               ),
                               controller: foodAmountController,
+                              validator: (foodAmountController) {
+                                if (foodAmountController == null ||
+                                    foodAmountController.isEmpty) {
+                                  return 'Enter an amount';
+                                }
+                                final parsedAmount = double.tryParse(
+                                  foodAmountController,
+                                );
+                                if (parsedAmount == null) {
+                                  return 'Please enter number.';
+                                }
+                                if (parsedAmount <= 0) {
+                                  return 'Too small.';
+                                }
+                              },
                             ),
                           ),
                           SizedBox(width: 10),
@@ -185,10 +210,12 @@ class _HomePageState extends State<HomePage> {
                                 ),
                               ],
                               label: const Text('Unit'),
+                              errorText: unitError,
                               onSelected: (value) {
                                 if (value != null) {
                                   setState(() {
                                     selectedUnit = value;
+                                    unitError = null;
                                   });
                                 }
                               },
@@ -206,6 +233,17 @@ class _HomePageState extends State<HomePage> {
                           SizedBox(width: 80),
                           ElevatedButton(
                             onPressed: () async {
+                              if (!_formKey.currentState!.validate()) {
+                                return;
+                              }
+
+                              if (selectedUnit == null) {
+                                setState(() {
+                                  unitError = 'Enter unit';
+                                });
+                                return;
+                              }
+
                               try {
                                 await saveFood();
                                 foodNameController.clear();
@@ -224,34 +262,6 @@ class _HomePageState extends State<HomePage> {
                                 print('ERROR: $e');
                               }
                             },
-                            //() async {
-
-                            // final food = {
-                            //   'name': foodNameController.text,
-                            //   'category': selectedCategory,
-                            //   'expiry_date': selectedDate?.toIso8601String(),
-                            //   'amount': double.tryParse(
-                            //     foodAmountController.text,
-                            //   ),
-                            //   'unit': selectedUnit,
-                            //   'note': foodNotecontroller.text,
-                            // };
-                            // print('''
-                            //   Name: ${foodNameController.text}
-                            //   Category: $selectedCategory
-                            //   Date: $selectedDate
-                            //   Amount: ${foodAmountController.text}
-                            //   Unit: $selectedUnit
-                            //   Note: ${foodNotecontroller.text}
-                            //     ''');
-                            // final supabase = Supabase.instance.client;
-                            // try {
-                            //   await supabase.from('food').insert(food);
-                            //   print('inserted!');
-                            // } catch (e) {
-                            //   print('ERROR: $e');
-                            // }
-                            //},
                             child: const Text('Save'),
                           ),
                           ElevatedButton(
