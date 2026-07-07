@@ -1,3 +1,5 @@
+import 'dart:ffi';
+
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -37,6 +39,7 @@ class _HomePageState extends State<HomePage> {
   String? selectedCategory;
   String? selectedUnit;
   String? unitError;
+  bool dateError = false;
   final foodNotecontroller = TextEditingController();
   Future<DateTime?> _selectDate() async {
     final DateTime? pickedDate = await showDatePicker(
@@ -157,15 +160,26 @@ class _HomePageState extends State<HomePage> {
                           if (pickedDate != null) {
                             setState(() {
                               selectedDate = pickedDate;
+                              dateError = false;
                             });
                           }
                         },
-                        child: Text(
-                          selectedDate != null
-                              ? '${selectedDate!.day}/${selectedDate!.month}/${selectedDate!.year}'
-                              : 'Select expiry date',
-                        ),
+                        child: Text(() {
+                          if (selectedDate != null) {
+                            return '${selectedDate!.day}/${selectedDate!.month}/${selectedDate!.year}';
+                          } else if (dateError == true) {
+                            return 'Enter expiry date';
+                          }
+                          return 'Select expiry date';
+                        }()),
                       ),
+                      if (dateError)
+                        Text(
+                          'Select expiry date',
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.error,
+                          ),
+                        ),
                       Row(
                         children: [
                           Expanded(
@@ -240,6 +254,13 @@ class _HomePageState extends State<HomePage> {
                               if (selectedUnit == null) {
                                 setState(() {
                                   unitError = 'Enter unit';
+                                });
+                                return;
+                              }
+
+                              if (selectedDate == null) {
+                                setState(() {
+                                  dateError = true;
                                 });
                                 return;
                               }
