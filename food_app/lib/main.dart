@@ -103,6 +103,7 @@ class _HomePageState extends State<HomePage> {
           content: StatefulBuilder(
             builder: (context, setState) {
               return Form(
+                autovalidateMode: AutovalidateMode.onUserInteraction,
                 key: _formKey,
                 child: Padding(
                   padding: EdgeInsetsGeometry.all(10.0),
@@ -247,21 +248,28 @@ class _HomePageState extends State<HomePage> {
                           SizedBox(width: 80),
                           ElevatedButton(
                             onPressed: () async {
+                              bool hasError = false;
                               if (!_formKey.currentState!.validate()) {
-                                return;
+                                hasError = true;
                               }
 
                               if (selectedUnit == null) {
+                                print('validation failed');
                                 setState(() {
                                   unitError = 'Enter unit';
                                 });
-                                return;
+
+                                hasError = true;
                               }
 
                               if (selectedDate == null) {
                                 setState(() {
                                   dateError = true;
                                 });
+                                hasError = true;
+                              }
+
+                              if (hasError) {
                                 return;
                               }
 
