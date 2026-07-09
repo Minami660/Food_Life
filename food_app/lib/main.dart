@@ -35,12 +35,23 @@ class _HomePageState extends State<HomePage> {
   final _formKey = GlobalKey<FormState>();
   final foodNameController = TextEditingController();
   final foodAmountController = TextEditingController();
+  List<Map<String, dynamic>> foodList = [];
   DateTime? selectedDate;
   String? selectedCategory;
   String? selectedUnit;
   String? unitError;
   bool dateError = false;
   final foodNotecontroller = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+
+    print('initState');
+    print('Before getFood: ${foodList.length}');
+    getFood();
+  }
+
   Future<DateTime?> _selectDate() async {
     final DateTime? pickedDate = await showDatePicker(
       context: context,
@@ -54,13 +65,26 @@ class _HomePageState extends State<HomePage> {
   Future<void> addFood() async {
     final supabase = Supabase.instance.client;
 
-    await supabase.from('food').insert({
-      'name': 'Milk',
-      'category': 'Dairy',
-      'expiry_date': '2026-03-25',
-    });
+    // await supabase.from('food').insert({
+    //   'name': 'Milk',
+    //   'category': 'Dairy',
+    //   'expiry_date': '2026-03-25',
+    // });
 
-    print('Inserted!');
+    final data = await supabase.from('food').select();
+
+    print(data.length);
+  }
+
+  Future<void> getFood() async {
+    print('before ${foodList.length}');
+    final supabase = Supabase.instance.client;
+    await Future.delayed(const Duration(seconds: 2));
+    final temporaryList = await supabase.from('food').select();
+    setState(() {
+      foodList = temporaryList;
+    });
+    print('after ${foodList.length}');
   }
 
   Future<void> saveFood() async {
@@ -81,12 +105,7 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Food App')),
-      body: Center(
-        child: ElevatedButton(
-          onPressed: addFood,
-          child: const Text('Add Food'),
-        ),
-      ),
+      body: Center(child: Text('count: ${foodList.length}')),
       floatingActionButton: FloatingActionButton(
         child: Icon(Icons.add_circle_outline),
         onPressed: () => _dialogBuilder(context),
