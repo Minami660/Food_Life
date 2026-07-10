@@ -46,9 +46,6 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
-
-    print('initState');
-    print('Before getFood: ${foodList.length}');
     getFood();
   }
 
@@ -77,14 +74,11 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> getFood() async {
-    print('before ${foodList.length}');
     final supabase = Supabase.instance.client;
-    await Future.delayed(const Duration(seconds: 2));
     final temporaryList = await supabase.from('food').select();
     setState(() {
       foodList = temporaryList;
     });
-    print('after ${foodList.length}');
   }
 
   Future<void> saveFood() async {
@@ -105,7 +99,17 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Food App')),
-      body: Center(child: Text('count: ${foodList.length}')),
+      body: Center(
+        child: ListView.builder(
+          itemCount: foodList.length,
+          itemBuilder: (context, int index) {
+            return ListTile(
+              title: Text('${foodList[index]['name']}'),
+              subtitle: Text('Expires on: ${foodList[index]['expiry_date']}'),
+            );
+          },
+        ),
+      ),
       floatingActionButton: FloatingActionButton(
         child: Icon(Icons.add_circle_outline),
         onPressed: () => _dialogBuilder(context),
