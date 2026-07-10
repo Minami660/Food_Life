@@ -100,14 +100,23 @@ class _HomePageState extends State<HomePage> {
     return Scaffold(
       appBar: AppBar(title: const Text('Food App')),
       body: Center(
-        child: ListView.builder(
+        child: ListView.separated(
           itemCount: foodList.length,
           itemBuilder: (context, int index) {
             return ListTile(
               title: Text('${foodList[index]['name']}'),
-              subtitle: Text('Expires on: ${foodList[index]['expiry_date']}'),
+              subtitle: Column(
+                children: [
+                  Text(
+                    '${foodList[index]['amount']} ${foodList[index]['unit']}',
+                  ),
+                  Text('Expires on: ${foodList[index]['expiry_date']}'),
+                ],
+              ),
             );
           },
+          separatorBuilder: (BuildContext context, int index) =>
+              const Divider(),
         ),
       ),
       floatingActionButton: FloatingActionButton(
