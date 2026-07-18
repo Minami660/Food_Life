@@ -95,6 +95,11 @@ class _HomePageState extends State<HomePage> {
     print('inserted!');
   }
 
+  Future<void> deleteFood(int id) async {
+    final supabase = Supabase.instance.client;
+    await supabase.from('food').delete().eq('id', id);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -112,6 +117,47 @@ class _HomePageState extends State<HomePage> {
                   ),
                   Text('Expires on: ${foodList[index]['expiry_date']}'),
                 ],
+              ),
+              trailing: IconButton(
+                onPressed: () {
+                  showDialog<void>(
+                    context: context,
+                    builder: (context) {
+                      return AlertDialog(
+                        title: Text('Delete Window'),
+                        content: Text(
+                          'Are you sure you want to delete ${foodList[index]['name']}? \nYou cannot undone this action.',
+                        ),
+                        actions: [
+                          ElevatedButton(
+                            onPressed: () {
+                              Navigator.pop(context);
+                            },
+                            child: const Text('Cancel'),
+                          ),
+                          ElevatedButton(
+                            onPressed: () async {
+                              try {
+                                await deleteFood(foodList[index]['id']);
+                                await getFood();
+                                Navigator.pop(context);
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Food deleted successfully!'),
+                                  ),
+                                );
+                              } catch (e) {
+                                print('error: ${e}');
+                              }
+                            },
+                            child: const Text('Delete'),
+                          ),
+                        ],
+                      );
+                    },
+                  );
+                },
+                icon: Icon(Icons.delete),
               ),
             );
           },
@@ -322,6 +368,7 @@ class _HomePageState extends State<HomePage> {
                               } catch (e) {
                                 print('ERROR: $e');
                               }
+                              await getFood();
                             },
                             child: const Text('Save'),
                           ),
