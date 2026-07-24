@@ -100,6 +100,30 @@ class _HomePageState extends State<HomePage> {
     await supabase.from('food').delete().eq('id', id);
   }
 
+  Future<void> editFood(int id) async {
+    final food = {
+      'name': foodNameController.text,
+      'category': selectedCategory,
+      'expiry_date': selectedDate?.toIso8601String(),
+      'amount': double.tryParse(foodAmountController.text),
+      'unit': selectedUnit,
+      'note': foodNotecontroller.text,
+    };
+    final supabase = Supabase.instance.client;
+    await supabase.from('food').update(food).eq('id', id);
+  }
+
+  void clearFields() {
+    foodNameController.clear();
+    foodAmountController.clear();
+    foodNotecontroller.clear();
+    setState(() {
+      selectedCategory = null;
+      selectedDate = null;
+      selectedUnit = null;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -118,46 +142,69 @@ class _HomePageState extends State<HomePage> {
                   Text('Expires on: ${foodList[index]['expiry_date']}'),
                 ],
               ),
-              trailing: IconButton(
-                onPressed: () {
-                  showDialog<void>(
-                    context: context,
-                    builder: (context) {
-                      return AlertDialog(
-                        title: Text('Delete Window'),
-                        content: Text(
-                          'Are you sure you want to delete ${foodList[index]['name']}? \nYou cannot undone this action.',
-                        ),
-                        actions: [
-                          ElevatedButton(
-                            onPressed: () {
-                              Navigator.pop(context);
-                            },
-                            child: const Text('Cancel'),
-                          ),
-                          ElevatedButton(
-                            onPressed: () async {
-                              try {
-                                await deleteFood(foodList[index]['id']);
-                                await getFood();
-                                Navigator.pop(context);
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Food deleted successfully!'),
-                                  ),
-                                );
-                              } catch (e) {
-                                print('error: ${e}');
-                              }
-                            },
-                            child: const Text('Delete'),
-                          ),
-                        ],
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    onPressed: () {
+                      foodNameController.text = '${foodList[index]['name']}';
+                      selectedCategory = foodList[index]['category'];
+                      selectedDate = DateTime.parse(
+                        foodList[index]['expiry_date'],
+                      );
+                      foodAmountController.text = (foodList[index]['amount'])
+                          .toString();
+                      selectedUnit = foodList[index]['unit'];
+                      foodNotecontroller.text =
+                          '${foodList[index]['note']}' ?? '';
+                      _dialogBuilder(context, 'edit', foodList[index]);
+                    },
+                    icon: Icon(Icons.edit),
+                  ),
+                  IconButton(
+                    onPressed: () {
+                      showDialog<void>(
+                        context: context,
+                        builder: (context) {
+                          return AlertDialog(
+                            title: Text('Delete Window'),
+                            content: Text(
+                              'Are you sure you want to delete ${foodList[index]['name']}? \nYou cannot undone this action.',
+                            ),
+                            actions: [
+                              ElevatedButton(
+                                onPressed: () {
+                                  Navigator.pop(context);
+                                },
+                                child: const Text('Cancel'),
+                              ),
+                              ElevatedButton(
+                                onPressed: () async {
+                                  try {
+                                    await deleteFood(foodList[index]['id']);
+                                    await getFood();
+                                    Navigator.pop(context);
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text(
+                                          'Food deleted successfully!',
+                                        ),
+                                      ),
+                                    );
+                                  } catch (e) {
+                                    print('error: ${e}');
+                                  }
+                                },
+                                child: const Text('Delete'),
+                              ),
+                            ],
+                          );
+                        },
                       );
                     },
-                  );
-                },
-                icon: Icon(Icons.delete),
+                    icon: Icon(Icons.delete),
+                  ),
+                ],
               ),
             );
           },
@@ -167,17 +214,24 @@ class _HomePageState extends State<HomePage> {
       ),
       floatingActionButton: FloatingActionButton(
         child: Icon(Icons.add_circle_outline),
-        onPressed: () => _dialogBuilder(context),
+        onPressed: () {
+          clearFields();
+          _dialogBuilder(context, 'add', null);
+        },
       ),
     );
   }
 
-  Future<void> _dialogBuilder(BuildContext context) {
+  Future<void> _dialogBuilder(
+    BuildContext context,
+    String mode,
+    Map<String, dynamic>? food,
+  ) {
     return showDialog<void>(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('Add food'),
+          title: Text(mode == 'add' ? 'Add food' : 'Edit food'),
           content: StatefulBuilder(
             builder: (context, setState) {
               return Form(
@@ -205,6 +259,7 @@ class _HomePageState extends State<HomePage> {
                       SizedBox(
                         width: 210,
                         child: DropdownMenu(
+                          initialSelection: selectedCategory,
                           dropdownMenuEntries: <DropdownMenuEntry<String>>[
                             DropdownMenuEntry(value: 'Meat', label: 'Meat'),
                             DropdownMenuEntry(
@@ -288,6 +343,7 @@ class _HomePageState extends State<HomePage> {
                           SizedBox(width: 10),
                           Expanded(
                             child: DropdownMenu(
+                              initialSelection: selectedUnit,
                               dropdownMenuEntries: <DropdownMenuEntry<String>>[
                                 DropdownMenuEntry(value: 'Kg', label: 'Kg'),
                                 DropdownMenuEntry(
@@ -323,7 +379,8 @@ class _HomePageState extends State<HomePage> {
                       ),
                       Row(
                         children: [
-                          SizedBox(width: 80),
+                          SizedBox(width: 33),
+
                           ElevatedButton(
                             onPressed: () async {
                               bool hasError = false;
@@ -352,7 +409,11 @@ class _HomePageState extends State<HomePage> {
                               }
 
                               try {
-                                await saveFood();
+                                if (mode == 'add') {
+                                  await saveFood();
+                                } else {
+                                  await editFood(food!['id']);
+                                }
                                 foodNameController.clear();
                                 foodAmountController.clear();
                                 foodNotecontroller.clear();
@@ -361,8 +422,12 @@ class _HomePageState extends State<HomePage> {
                                 selectedUnit = null;
                                 Navigator.pop(context);
                                 ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Food saved successfully!'),
+                                  SnackBar(
+                                    content: Text(
+                                      mode == 'add'
+                                          ? 'Food saved successfully!'
+                                          : 'Food edited successfully!',
+                                    ),
                                   ),
                                 );
                               } catch (e) {
@@ -370,10 +435,12 @@ class _HomePageState extends State<HomePage> {
                               }
                               await getFood();
                             },
-                            child: const Text('Save'),
+                            child: Text(
+                              mode == 'add' ? 'Save' : 'Save changes',
+                            ),
                           ),
                           ElevatedButton(
-                            onPressed: () => print('Cancel button pressed'),
+                            onPressed: () => Navigator.pop(context),
                             child: const Text('Cancel'),
                           ),
                         ],
