@@ -1,7 +1,12 @@
 import 'dart:ffi';
-
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:timezone/data/latest_all.dart' as tz;
+import 'package:timezone/timezone.dart' as tz;
+
+FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+    FlutterLocalNotificationsPlugin();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -12,7 +17,56 @@ void main() async {
         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0',
   );
 
+  // initialise the plugin. app_icon needs to be a added as a drawable resource to the Android head project
+  const AndroidInitializationSettings initializationSettingsAndroid =
+      AndroidInitializationSettings('@mipmap/ic_launcher');
+  final DarwinInitializationSettings initializationSettingsDarwin =
+      DarwinInitializationSettings();
+  final LinuxInitializationSettings initializationSettingsLinux =
+      LinuxInitializationSettings(defaultActionName: 'Open notification');
+  final WindowsInitializationSettings initializationSettingsWindows =
+      WindowsInitializationSettings(
+        appName: 'Flutter Local Notifications Example',
+        appUserModelId: 'Com.Dexterous.FlutterLocalNotificationsExample',
+        // Search online for GUID generators to make your own
+        guid: 'd49b0314-ee7a-4626-bf79-97cdb8a991bb',
+      );
+  final InitializationSettings initializationSettings = InitializationSettings(
+    android: initializationSettingsAndroid,
+    iOS: initializationSettingsDarwin,
+    macOS: initializationSettingsDarwin,
+    linux: initializationSettingsLinux,
+    windows: initializationSettingsWindows,
+  );
+  await flutterLocalNotificationsPlugin.initialize(
+    settings: initializationSettings,
+  );
+
+  final androidPlugin = flutterLocalNotificationsPlugin
+      .resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin
+      >();
+
+  print(
+    'Can schedule exact notifications: '
+    '${await androidPlugin?.canScheduleExactNotifications()}',
+  );
+
+  await androidPlugin?.requestNotificationsPermission();
+  await androidPlugin?.requestExactAlarmsPermission();
+
+  //before
+  // await flutterLocalNotificationsPlugin
+  //     .resolvePlatformSpecificImplementation<
+  //       AndroidFlutterLocalNotificationsPlugin
+  //     >()
+  //     ?.requestNotificationsPermission();
+  //     ?.requestExactAlarmsPermission();
+
+  tz.initializeTimeZones();
   runApp(const MyApp());
+
+  //tz.setLocalLocation(tz.getLocation('America/Vancouver'));
 }
 
 class MyApp extends StatelessWidget {
@@ -49,6 +103,15 @@ class _HomePageState extends State<HomePage> {
     getFood();
   }
 
+  void onDidReceiveNotificationResponse(
+    NotificationResponse notificationResponse,
+  ) async {
+    final String? payload = notificationResponse.payload;
+    if (notificationResponse.payload != null) {
+      debugPrint('notification payload: $payload');
+    }
+  }
+
   Future<DateTime?> _selectDate() async {
     final DateTime? pickedDate = await showDatePicker(
       context: context,
@@ -69,7 +132,6 @@ class _HomePageState extends State<HomePage> {
     // });
 
     final data = await supabase.from('food').select();
-
     print(data.length);
   }
 
@@ -122,6 +184,39 @@ class _HomePageState extends State<HomePage> {
       selectedDate = null;
       selectedUnit = null;
     });
+  }
+
+  void testNotification() async {
+    const AndroidNotificationDetails androidNotificationDetails =
+        AndroidNotificationDetails(
+          'your channel id',
+          'your channel name',
+          channelDescription: 'your channel description',
+          importance: Importance.max,
+          priority: Priority.high,
+          ticker: 'ticker',
+        );
+    const NotificationDetails notificationDetails = NotificationDetails(
+      android: androidNotificationDetails,
+    );
+    //if (selectedDate != null) {
+    await flutterLocalNotificationsPlugin.zonedSchedule(
+      id: 0,
+      title: 'Test Notification',
+      body: 'Notification After 30 secs',
+      notificationDetails: notificationDetails,
+      payload: 'item x',
+      // scheduledDate: tz.TZDateTime.from(
+      //   selectedDate!,
+      //   tz.local,
+      // ).subtract(const Duration(days: 1)),
+      scheduledDate: tz.TZDateTime.now(
+        tz.local,
+      ).add(const Duration(seconds: 30)),
+      androidScheduleMode: AndroidScheduleMode.exact,
+    );
+    //}
+    print('test notification called!');
   }
 
   @override
@@ -212,11 +307,13 @@ class _HomePageState extends State<HomePage> {
               const Divider(),
         ),
       ),
+
       floatingActionButton: FloatingActionButton(
         child: Icon(Icons.add_circle_outline),
         onPressed: () {
           clearFields();
           _dialogBuilder(context, 'add', null);
+          testNotification();
         },
       ),
     );
