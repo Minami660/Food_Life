@@ -12,7 +12,7 @@ This mobile lets an user enter the food and its details such as its expiry date,
 - View the food item(s)
 
 # Demo
-View food items <img width="423" height="931" alt="Food_App_ViewFood" src="https://github.com/user-attachments/assets/2c38491d-e35c-4ff7-9213-99cf9471687a" />
+| View food items | <img width="423" height="931" alt="Food_App_ViewFood" src="https://github.com/user-attachments/assets/2c38491d-e35c-4ff7-9213-99cf9471687a" /> |
 Add food items <img width="420" height="931" alt="Food_App_AddFood" src="https://github.com/user-attachments/assets/62b1451d-22cf-4bd7-8dbc-725c5b0f5909" />
 Categorize food items <img width="418" height="933" alt="Food_App_CategorizeFood" src="https://github.com/user-attachments/assets/55562197-1b0a-4cba-a5f2-2e2943c377ad" />
 Set expiration date <img width="420" height="930" alt="Food_App_SetExpirationDate" src="https://github.com/user-attachments/assets/c8b73f1e-01e8-4fbb-8132-9c24806d4e98" />
