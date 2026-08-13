@@ -55,14 +55,6 @@ void main() async {
   await androidPlugin?.requestNotificationsPermission();
   await androidPlugin?.requestExactAlarmsPermission();
 
-  //before
-  // await flutterLocalNotificationsPlugin
-  //     .resolvePlatformSpecificImplementation<
-  //       AndroidFlutterLocalNotificationsPlugin
-  //     >()
-  //     ?.requestNotificationsPermission();
-  //     ?.requestExactAlarmsPermission();
-
   tz.initializeTimeZones();
   runApp(const MyApp());
 
@@ -186,6 +178,40 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
+  tz.TZDateTime notificationTime(DateTime date) {
+    return tz.TZDateTime.from(date, tz.local).subtract(const Duration(days: 1));
+  }
+
+  NotificationDetails createNotoficationDetails() {
+    const AndroidNotificationDetails androidNotificationDetails =
+        AndroidNotificationDetails(
+          'your channel id',
+          'your channel name',
+          channelDescription: 'your channel description',
+          importance: Importance.max,
+          priority: Priority.high,
+          ticker: 'ticker',
+        );
+    const NotificationDetails notificationDetails = NotificationDetails(
+      android: androidNotificationDetails,
+    );
+    return notificationDetails;
+  }
+
+  Future<void> scheduleNotification(
+    NotificationDetails notificationDetails,
+  ) async {
+    await flutterLocalNotificationsPlugin.zonedSchedule(
+      id: 0,
+      title: 'Test Notification',
+      body: 'Notification After 30 secs',
+      notificationDetails: notificationDetails,
+      payload: 'item x',
+      scheduledDate: notificationTime(selectedDate!),
+      androidScheduleMode: AndroidScheduleMode.exact,
+    );
+  }
+
   void testNotification() async {
     const AndroidNotificationDetails androidNotificationDetails =
         AndroidNotificationDetails(
@@ -199,24 +225,20 @@ class _HomePageState extends State<HomePage> {
     const NotificationDetails notificationDetails = NotificationDetails(
       android: androidNotificationDetails,
     );
-    //if (selectedDate != null) {
-    await flutterLocalNotificationsPlugin.zonedSchedule(
-      id: 0,
-      title: 'Test Notification',
-      body: 'Notification After 30 secs',
-      notificationDetails: notificationDetails,
-      payload: 'item x',
-      // scheduledDate: tz.TZDateTime.from(
-      //   selectedDate!,
-      //   tz.local,
-      // ).subtract(const Duration(days: 1)),
-      scheduledDate: tz.TZDateTime.now(
-        tz.local,
-      ).add(const Duration(seconds: 30)),
-      androidScheduleMode: AndroidScheduleMode.exact,
-    );
-    //}
-    print('test notification called!');
+    if (selectedDate != null) {
+      await flutterLocalNotificationsPlugin.zonedSchedule(
+        id: 0,
+        title: 'Test Notification',
+        body: 'Notification After 30 secs',
+        notificationDetails: notificationDetails,
+        payload: 'item x',
+        scheduledDate: notificationTime(selectedDate!),
+        androidScheduleMode: AndroidScheduleMode.exact,
+      );
+      print('selected date is not null');
+    } else {
+      print('selected date is null');
+    }
   }
 
   @override
@@ -313,7 +335,7 @@ class _HomePageState extends State<HomePage> {
         onPressed: () {
           clearFields();
           _dialogBuilder(context, 'add', null);
-          testNotification();
+          //testNotification();
         },
       ),
     );
@@ -508,6 +530,19 @@ class _HomePageState extends State<HomePage> {
                               try {
                                 if (mode == 'add') {
                                   await saveFood();
+                                  NotificationDetails notificationDetail =
+                                      createNotoficationDetails();
+                                  scheduleNotification(notificationDetail);
+                                  final pendingNotifications =
+                                      await flutterLocalNotificationsPlugin
+                                          .pendingNotificationRequests();
+
+                                  for (final notification
+                                      in pendingNotifications) {
+                                    print('ID: ${notification.id}');
+                                    print('Title: ${notification.title}');
+                                    print('Body: ${notification.body}');
+                                  }
                                 } else {
                                   await editFood(food!['id']);
                                 }
