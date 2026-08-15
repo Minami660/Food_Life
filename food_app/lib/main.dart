@@ -135,7 +135,7 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
-  Future<void> saveFood() async {
+  Future<Map<String, dynamic>> saveFood() async {
     final food = {
       'name': foodNameController.text,
       'category': selectedCategory,
@@ -145,8 +145,12 @@ class _HomePageState extends State<HomePage> {
       'note': foodNotecontroller.text,
     };
     final supabase = Supabase.instance.client;
-    await supabase.from('food').insert(food);
-    print('inserted!');
+    final insertedFood = await supabase
+        .from('food')
+        .insert(food)
+        .select('id, name');
+    print(insertedFood[0]);
+    return (insertedFood[0]);
   }
 
   Future<void> deleteFood(int id) async {
@@ -200,11 +204,12 @@ class _HomePageState extends State<HomePage> {
 
   Future<void> scheduleNotification(
     NotificationDetails notificationDetails,
+    Map food,
   ) async {
     await flutterLocalNotificationsPlugin.zonedSchedule(
-      id: 0,
-      title: 'Test Notification',
-      body: 'Notification After 30 secs',
+      id: food['id'],
+      title: 'Expiry Notification',
+      body: '${food['name']} expires tomorrow!',
       notificationDetails: notificationDetails,
       payload: 'item x',
       scheduledDate: notificationTime(selectedDate!),
@@ -529,10 +534,15 @@ class _HomePageState extends State<HomePage> {
 
                               try {
                                 if (mode == 'add') {
-                                  await saveFood();
+                                  final foodId = await saveFood();
                                   NotificationDetails notificationDetail =
                                       createNotoficationDetails();
-                                  scheduleNotification(notificationDetail);
+                                  await scheduleNotification(
+                                    notificationDetail,
+                                    foodId,
+                                  );
+
+                                  //Display the pending notifications in the console
                                   final pendingNotifications =
                                       await flutterLocalNotificationsPlugin
                                           .pendingNotificationRequests();
