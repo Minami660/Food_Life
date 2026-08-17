@@ -217,6 +217,10 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  Future<void> cancelNotification(int id) async {
+    await flutterLocalNotificationsPlugin.cancel(id: id);
+  }
+
   void testNotification() async {
     const AndroidNotificationDetails androidNotificationDetails =
         AndroidNotificationDetails(
@@ -303,7 +307,24 @@ class _HomePageState extends State<HomePage> {
                               ElevatedButton(
                                 onPressed: () async {
                                   try {
+                                    print(
+                                      'A notification for ${foodList[index]['name']} '
+                                      'with ID ${foodList[index]['id']} is deleted.',
+                                    );
                                     await deleteFood(foodList[index]['id']);
+                                    await cancelNotification(
+                                      foodList[index]['id'],
+                                    );
+                                    final pendingNotifications =
+                                        await flutterLocalNotificationsPlugin
+                                            .pendingNotificationRequests();
+
+                                    for (final notification
+                                        in pendingNotifications) {
+                                      print('ID: ${notification.id}');
+                                      print('Title: ${notification.title}');
+                                      print('Body: ${notification.body}');
+                                    }
                                     await getFood();
                                     Navigator.pop(context);
                                     ScaffoldMessenger.of(context).showSnackBar(
@@ -555,6 +576,18 @@ class _HomePageState extends State<HomePage> {
                                   }
                                 } else {
                                   await editFood(food!['id']);
+                                  print(food['id']);
+                                  print(food['name']);
+                                  await cancelNotification(food['id']);
+                                  final pendingNotifications =
+                                      await flutterLocalNotificationsPlugin
+                                          .pendingNotificationRequests();
+                                  for (final notification
+                                      in pendingNotifications) {
+                                    print('ID: ${notification.id}');
+                                    print('Title: ${notification.title}');
+                                    print('Body: ${notification.body}');
+                                  }
                                 }
                                 foodNameController.clear();
                                 foodAmountController.clear();
