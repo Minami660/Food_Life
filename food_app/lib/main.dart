@@ -158,7 +158,7 @@ class _HomePageState extends State<HomePage> {
     await supabase.from('food').delete().eq('id', id);
   }
 
-  Future<void> editFood(int id) async {
+  Future<Map<String, dynamic>> editFood(int id) async {
     final food = {
       'name': foodNameController.text,
       'category': selectedCategory,
@@ -168,7 +168,12 @@ class _HomePageState extends State<HomePage> {
       'note': foodNotecontroller.text,
     };
     final supabase = Supabase.instance.client;
-    await supabase.from('food').update(food).eq('id', id);
+    final editedFood = await supabase
+        .from('food')
+        .update(food)
+        .eq('id', id)
+        .select('id, name');
+    return editedFood[0];
   }
 
   void clearFields() {
@@ -219,6 +224,20 @@ class _HomePageState extends State<HomePage> {
 
   Future<void> cancelNotification(int id) async {
     await flutterLocalNotificationsPlugin.cancel(id: id);
+  }
+
+  Future<void> checkPendingNotifications() async {
+    final pendingNotifications = await flutterLocalNotificationsPlugin
+        .pendingNotificationRequests();
+
+    print('--- Pending Notifications ---');
+
+    for (final notification in pendingNotifications) {
+      print('ID: ${notification.id}');
+      print('Title: ${notification.title}');
+      print('Body: ${notification.body}');
+      print('----------------------------');
+    }
   }
 
   void testNotification() async {
@@ -562,32 +581,27 @@ class _HomePageState extends State<HomePage> {
                                     notificationDetail,
                                     foodId,
                                   );
-
-                                  //Display the pending notifications in the console
-                                  final pendingNotifications =
-                                      await flutterLocalNotificationsPlugin
-                                          .pendingNotificationRequests();
-
-                                  for (final notification
-                                      in pendingNotifications) {
-                                    print('ID: ${notification.id}');
-                                    print('Title: ${notification.title}');
-                                    print('Body: ${notification.body}');
-                                  }
                                 } else {
-                                  await editFood(food!['id']);
-                                  print(food['id']);
-                                  print(food['name']);
+                                  final foodInfo = await editFood(food!['id']);
+                                  print(
+                                    '--- Notifications before canceling and editing ---',
+                                  );
+                                  await checkPendingNotifications();
                                   await cancelNotification(food['id']);
-                                  final pendingNotifications =
-                                      await flutterLocalNotificationsPlugin
-                                          .pendingNotificationRequests();
-                                  for (final notification
-                                      in pendingNotifications) {
-                                    print('ID: ${notification.id}');
-                                    print('Title: ${notification.title}');
-                                    print('Body: ${notification.body}');
-                                  }
+                                  print(
+                                    '--- Notifications after canceling and editing ---',
+                                  );
+                                  await checkPendingNotifications();
+                                  NotificationDetails notificationDetail =
+                                      createNotoficationDetails();
+                                  await scheduleNotification(
+                                    notificationDetail,
+                                    foodInfo,
+                                  );
+                                  print(
+                                    '--- Notifications after creating it ---',
+                                  );
+                                  await checkPendingNotifications();
                                 }
                                 foodNameController.clear();
                                 foodAmountController.clear();
