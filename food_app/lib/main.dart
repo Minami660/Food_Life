@@ -188,7 +188,10 @@ class _HomePageState extends State<HomePage> {
   }
 
   tz.TZDateTime notificationTime(DateTime date) {
-    return tz.TZDateTime.from(date, tz.local).subtract(const Duration(days: 1));
+    return tz.TZDateTime.from(
+      selectedDate!,
+      tz.local,
+    ).add(const Duration(hours: 9));
   }
 
   NotificationDetails createNotoficationDetails() {
@@ -214,7 +217,7 @@ class _HomePageState extends State<HomePage> {
     await flutterLocalNotificationsPlugin.zonedSchedule(
       id: food['id'],
       title: 'Expiry Notification',
-      body: '${food['name']} expires tomorrow!',
+      body: '${food['name']} expires today!',
       notificationDetails: notificationDetails,
       payload: 'item x',
       scheduledDate: notificationTime(selectedDate!),
@@ -581,6 +584,7 @@ class _HomePageState extends State<HomePage> {
                                     notificationDetail,
                                     foodId,
                                   );
+                                  await checkPendingNotifications();
                                 } else {
                                   final foodInfo = await editFood(food!['id']);
                                   print(
