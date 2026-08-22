@@ -1,7 +1,12 @@
 import 'dart:ffi';
-
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:timezone/data/latest_all.dart' as tz;
+import 'package:timezone/timezone.dart' as tz;
+
+FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+    FlutterLocalNotificationsPlugin();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -12,7 +17,48 @@ void main() async {
         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0',
   );
 
+  // initialise the plugin. app_icon needs to be a added as a drawable resource to the Android head project
+  const AndroidInitializationSettings initializationSettingsAndroid =
+      AndroidInitializationSettings('@mipmap/ic_launcher');
+  final DarwinInitializationSettings initializationSettingsDarwin =
+      DarwinInitializationSettings();
+  final LinuxInitializationSettings initializationSettingsLinux =
+      LinuxInitializationSettings(defaultActionName: 'Open notification');
+  final WindowsInitializationSettings initializationSettingsWindows =
+      WindowsInitializationSettings(
+        appName: 'Flutter Local Notifications Example',
+        appUserModelId: 'Com.Dexterous.FlutterLocalNotificationsExample',
+        // Search online for GUID generators to make your own
+        guid: 'd49b0314-ee7a-4626-bf79-97cdb8a991bb',
+      );
+  final InitializationSettings initializationSettings = InitializationSettings(
+    android: initializationSettingsAndroid,
+    iOS: initializationSettingsDarwin,
+    macOS: initializationSettingsDarwin,
+    linux: initializationSettingsLinux,
+    windows: initializationSettingsWindows,
+  );
+  await flutterLocalNotificationsPlugin.initialize(
+    settings: initializationSettings,
+  );
+
+  final androidPlugin = flutterLocalNotificationsPlugin
+      .resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin
+      >();
+
+  print(
+    'Can schedule exact notifications: '
+    '${await androidPlugin?.canScheduleExactNotifications()}',
+  );
+
+  await androidPlugin?.requestNotificationsPermission();
+  await androidPlugin?.requestExactAlarmsPermission();
+
+  tz.initializeTimeZones();
   runApp(const MyApp());
+
+  //tz.setLocalLocation(tz.getLocation('America/Vancouver'));
 }
 
 class MyApp extends StatelessWidget {
@@ -49,6 +95,15 @@ class _HomePageState extends State<HomePage> {
     getFood();
   }
 
+  void onDidReceiveNotificationResponse(
+    NotificationResponse notificationResponse,
+  ) async {
+    final String? payload = notificationResponse.payload;
+    if (notificationResponse.payload != null) {
+      debugPrint('notification payload: $payload');
+    }
+  }
+
   Future<DateTime?> _selectDate() async {
     final DateTime? pickedDate = await showDatePicker(
       context: context,
@@ -69,7 +124,6 @@ class _HomePageState extends State<HomePage> {
     // });
 
     final data = await supabase.from('food').select();
-
     print(data.length);
   }
 
@@ -81,7 +135,7 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
-  Future<void> saveFood() async {
+  Future<Map<String, dynamic>> saveFood() async {
     final food = {
       'name': foodNameController.text,
       'category': selectedCategory,
@@ -91,8 +145,12 @@ class _HomePageState extends State<HomePage> {
       'note': foodNotecontroller.text,
     };
     final supabase = Supabase.instance.client;
-    await supabase.from('food').insert(food);
-    print('inserted!');
+    final insertedFood = await supabase
+        .from('food')
+        .insert(food)
+        .select('id, name');
+    print(insertedFood[0]);
+    return (insertedFood[0]);
   }
 
   Future<void> deleteFood(int id) async {
@@ -100,7 +158,7 @@ class _HomePageState extends State<HomePage> {
     await supabase.from('food').delete().eq('id', id);
   }
 
-  Future<void> editFood(int id) async {
+  Future<Map<String, dynamic>> editFood(int id) async {
     final food = {
       'name': foodNameController.text,
       'category': selectedCategory,
@@ -110,7 +168,12 @@ class _HomePageState extends State<HomePage> {
       'note': foodNotecontroller.text,
     };
     final supabase = Supabase.instance.client;
-    await supabase.from('food').update(food).eq('id', id);
+    final editedFood = await supabase
+        .from('food')
+        .update(food)
+        .eq('id', id)
+        .select('id, name');
+    return editedFood[0];
   }
 
   void clearFields() {
@@ -122,6 +185,95 @@ class _HomePageState extends State<HomePage> {
       selectedDate = null;
       selectedUnit = null;
     });
+  }
+
+  tz.TZDateTime notificationTime(DateTime date) {
+    if (tz.TZDateTime.now(tz.local).isAfter(
+      tz.TZDateTime.from(date, tz.local).add(const Duration(hours: 9)),
+    )) {
+      //Code if the food added after 9AM of its expiry date
+      return tz.TZDateTime.now(tz.local).add(const Duration(seconds: 1));
+    } else {
+      return tz.TZDateTime.from(date, tz.local).add(const Duration(hours: 9));
+    }
+  }
+
+  NotificationDetails createNotoficationDetails() {
+    const AndroidNotificationDetails androidNotificationDetails =
+        AndroidNotificationDetails(
+          'your channel id',
+          'your channel name',
+          channelDescription: 'your channel description',
+          importance: Importance.max,
+          priority: Priority.high,
+          ticker: 'ticker',
+        );
+    const NotificationDetails notificationDetails = NotificationDetails(
+      android: androidNotificationDetails,
+    );
+    return notificationDetails;
+  }
+
+  Future<void> scheduleNotification(
+    NotificationDetails notificationDetails,
+    Map food,
+  ) async {
+    await flutterLocalNotificationsPlugin.zonedSchedule(
+      id: food['id'],
+      title: 'Expiry Notification',
+      body: '${food['name']} expires today!',
+      notificationDetails: notificationDetails,
+      payload: 'item x',
+      scheduledDate: notificationTime(selectedDate!),
+      androidScheduleMode: AndroidScheduleMode.exact,
+    );
+  }
+
+  Future<void> cancelNotification(int id) async {
+    await flutterLocalNotificationsPlugin.cancel(id: id);
+  }
+
+  Future<void> checkPendingNotifications() async {
+    final pendingNotifications = await flutterLocalNotificationsPlugin
+        .pendingNotificationRequests();
+
+    print('--- Pending Notifications ---');
+
+    for (final notification in pendingNotifications) {
+      print('ID: ${notification.id}');
+      print('Title: ${notification.title}');
+      print('Body: ${notification.body}');
+      print('----------------------------');
+    }
+  }
+
+  void testNotification() async {
+    const AndroidNotificationDetails androidNotificationDetails =
+        AndroidNotificationDetails(
+          'your channel id',
+          'your channel name',
+          channelDescription: 'your channel description',
+          importance: Importance.max,
+          priority: Priority.high,
+          ticker: 'ticker',
+        );
+    const NotificationDetails notificationDetails = NotificationDetails(
+      android: androidNotificationDetails,
+    );
+    if (selectedDate != null) {
+      await flutterLocalNotificationsPlugin.zonedSchedule(
+        id: 0,
+        title: 'Test Notification',
+        body: 'Notification After 30 secs',
+        notificationDetails: notificationDetails,
+        payload: 'item x',
+        scheduledDate: notificationTime(selectedDate!),
+        androidScheduleMode: AndroidScheduleMode.exact,
+      );
+      print('selected date is not null');
+    } else {
+      print('selected date is null');
+    }
   }
 
   @override
@@ -181,7 +333,24 @@ class _HomePageState extends State<HomePage> {
                               ElevatedButton(
                                 onPressed: () async {
                                   try {
+                                    print(
+                                      'A notification for ${foodList[index]['name']} '
+                                      'with ID ${foodList[index]['id']} is deleted.',
+                                    );
                                     await deleteFood(foodList[index]['id']);
+                                    await cancelNotification(
+                                      foodList[index]['id'],
+                                    );
+                                    final pendingNotifications =
+                                        await flutterLocalNotificationsPlugin
+                                            .pendingNotificationRequests();
+
+                                    for (final notification
+                                        in pendingNotifications) {
+                                      print('ID: ${notification.id}');
+                                      print('Title: ${notification.title}');
+                                      print('Body: ${notification.body}');
+                                    }
                                     await getFood();
                                     Navigator.pop(context);
                                     ScaffoldMessenger.of(context).showSnackBar(
@@ -212,11 +381,13 @@ class _HomePageState extends State<HomePage> {
               const Divider(),
         ),
       ),
+
       floatingActionButton: FloatingActionButton(
         child: Icon(Icons.add_circle_outline),
         onPressed: () {
           clearFields();
           _dialogBuilder(context, 'add', null);
+          //testNotification();
         },
       ),
     );
@@ -410,9 +581,39 @@ class _HomePageState extends State<HomePage> {
 
                               try {
                                 if (mode == 'add') {
-                                  await saveFood();
+                                  final foodId = await saveFood();
+                                  print(DateTime.now());
+                                  print(
+                                    tz.TZDateTime.from(selectedDate!, tz.local),
+                                  );
+                                  NotificationDetails notificationDetail =
+                                      createNotoficationDetails();
+                                  await scheduleNotification(
+                                    notificationDetail,
+                                    foodId,
+                                  );
+                                  await checkPendingNotifications();
                                 } else {
-                                  await editFood(food!['id']);
+                                  final foodInfo = await editFood(food!['id']);
+                                  print(
+                                    '--- Notifications before canceling and editing ---',
+                                  );
+                                  await checkPendingNotifications();
+                                  await cancelNotification(food['id']);
+                                  print(
+                                    '--- Notifications after canceling and editing ---',
+                                  );
+                                  await checkPendingNotifications();
+                                  NotificationDetails notificationDetail =
+                                      createNotoficationDetails();
+                                  await scheduleNotification(
+                                    notificationDetail,
+                                    foodInfo,
+                                  );
+                                  print(
+                                    '--- Notifications after creating it ---',
+                                  );
+                                  await checkPendingNotifications();
                                 }
                                 foodNameController.clear();
                                 foodAmountController.clear();
