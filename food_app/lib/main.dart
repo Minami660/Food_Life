@@ -188,10 +188,14 @@ class _HomePageState extends State<HomePage> {
   }
 
   tz.TZDateTime notificationTime(DateTime date) {
-    return tz.TZDateTime.from(
-      selectedDate!,
-      tz.local,
-    ).add(const Duration(hours: 9));
+    if (tz.TZDateTime.now(tz.local).isAfter(
+      tz.TZDateTime.from(date, tz.local).add(const Duration(hours: 9)),
+    )) {
+      //Code if the food added after 9AM of its expiry date
+      return tz.TZDateTime.now(tz.local).add(const Duration(seconds: 1));
+    } else {
+      return tz.TZDateTime.from(date, tz.local).add(const Duration(hours: 9));
+    }
   }
 
   NotificationDetails createNotoficationDetails() {
@@ -578,6 +582,10 @@ class _HomePageState extends State<HomePage> {
                               try {
                                 if (mode == 'add') {
                                   final foodId = await saveFood();
+                                  print(DateTime.now());
+                                  print(
+                                    tz.TZDateTime.from(selectedDate!, tz.local),
+                                  );
                                   NotificationDetails notificationDetail =
                                       createNotoficationDetails();
                                   await scheduleNotification(
