@@ -247,6 +247,14 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  Future<void> updateConsumed(int id, bool is_consumed) async {
+    final supabase = Supabase.instance.client;
+    await supabase
+        .from('food')
+        .update({'is_consumed': is_consumed})
+        .eq('id', id);
+  }
+
   void testNotification() async {
     const AndroidNotificationDetails androidNotificationDetails =
         AndroidNotificationDetails(
@@ -280,18 +288,33 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Food App')),
-      body: Center(
+      body: Scrollbar(
         child: ListView.separated(
           itemCount: foodList.length,
           itemBuilder: (context, int index) {
             return ListTile(
-              title: Text('${foodList[index]['name']}'),
+              title: Row(children: [Text('${foodList[index]['name']}')]),
               subtitle: Column(
                 children: [
                   Text(
                     '${foodList[index]['amount']} ${foodList[index]['unit']}',
                   ),
                   Text('Expires on: ${foodList[index]['expiry_date']}'),
+                  Row(
+                    children: [
+                      Checkbox(
+                        checkColor: Colors.white,
+                        value: foodList[index]['is_consumed'],
+                        onChanged: (bool? value) async {
+                          await updateConsumed(foodList[index]['id'], value!);
+                          setState(() {
+                            foodList[index]['is_consumed'] = value!;
+                          });
+                        },
+                      ),
+                      Text('Consumed'),
+                    ],
+                  ),
                 ],
               ),
               trailing: Row(
@@ -341,16 +364,16 @@ class _HomePageState extends State<HomePage> {
                                     await cancelNotification(
                                       foodList[index]['id'],
                                     );
-                                    final pendingNotifications =
-                                        await flutterLocalNotificationsPlugin
-                                            .pendingNotificationRequests();
+                                    // final pendingNotifications =
+                                    //     await flutterLocalNotificationsPlugin
+                                    //         .pendingNotificationRequests();
 
-                                    for (final notification
-                                        in pendingNotifications) {
-                                      print('ID: ${notification.id}');
-                                      print('Title: ${notification.title}');
-                                      print('Body: ${notification.body}');
-                                    }
+                                    // for (final notification
+                                    //     in pendingNotifications) {
+                                    //   print('ID: ${notification.id}');
+                                    //   print('Title: ${notification.title}');
+                                    //   print('Body: ${notification.body}');
+                                    // }
                                     await getFood();
                                     Navigator.pop(context);
                                     ScaffoldMessenger.of(context).showSnackBar(
@@ -592,18 +615,18 @@ class _HomePageState extends State<HomePage> {
                                     notificationDetail,
                                     foodId,
                                   );
-                                  await checkPendingNotifications();
+                                  //await checkPendingNotifications();
                                 } else {
                                   final foodInfo = await editFood(food!['id']);
                                   print(
                                     '--- Notifications before canceling and editing ---',
                                   );
-                                  await checkPendingNotifications();
+                                  //await checkPendingNotifications();
                                   await cancelNotification(food['id']);
                                   print(
                                     '--- Notifications after canceling and editing ---',
                                   );
-                                  await checkPendingNotifications();
+                                  //await checkPendingNotifications();
                                   NotificationDetails notificationDetail =
                                       createNotoficationDetails();
                                   await scheduleNotification(
@@ -613,7 +636,7 @@ class _HomePageState extends State<HomePage> {
                                   print(
                                     '--- Notifications after creating it ---',
                                   );
-                                  await checkPendingNotifications();
+                                  //await checkPendingNotifications();
                                 }
                                 foodNameController.clear();
                                 foodAmountController.clear();
