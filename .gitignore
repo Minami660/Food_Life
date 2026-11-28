@@ -1,0 +1,5 @@
+# Supabase temporary files
+supabase/.temp/
+
+# IDE cache and local settings
+.idea/caches/
