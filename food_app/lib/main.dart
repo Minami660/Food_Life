@@ -286,29 +286,38 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+    final sortedFoodList = List.from(foodList);
+    sortedFoodList.sort((a, b) {
+      return DateTime.parse(
+        a['expiry_date'],
+      ).compareTo(DateTime.parse(b['expiry_date']));
+    });
     return Scaffold(
       appBar: AppBar(title: const Text('Food App')),
       body: Scrollbar(
         child: ListView.separated(
-          itemCount: foodList.length,
+          itemCount: sortedFoodList.length,
           itemBuilder: (context, int index) {
             return ListTile(
-              title: Row(children: [Text('${foodList[index]['name']}')]),
+              title: Row(children: [Text('${sortedFoodList[index]['name']}')]),
               subtitle: Column(
                 children: [
                   Text(
-                    '${foodList[index]['amount']} ${foodList[index]['unit']}',
+                    '${sortedFoodList[index]['amount']} ${sortedFoodList[index]['unit']}',
                   ),
-                  Text('Expires on: ${foodList[index]['expiry_date']}'),
+                  Text('Expires on: ${sortedFoodList[index]['expiry_date']}'),
                   Row(
                     children: [
                       Checkbox(
                         checkColor: Colors.white,
-                        value: foodList[index]['is_consumed'],
+                        value: sortedFoodList[index]['is_consumed'],
                         onChanged: (bool? value) async {
-                          await updateConsumed(foodList[index]['id'], value!);
+                          await updateConsumed(
+                            sortedFoodList[index]['id'],
+                            value!,
+                          );
                           setState(() {
-                            foodList[index]['is_consumed'] = value!;
+                            sortedFoodList[index]['is_consumed'] = value!;
                           });
                         },
                       ),
@@ -322,17 +331,18 @@ class _HomePageState extends State<HomePage> {
                 children: [
                   IconButton(
                     onPressed: () {
-                      foodNameController.text = '${foodList[index]['name']}';
-                      selectedCategory = foodList[index]['category'];
+                      foodNameController.text =
+                          '${sortedFoodList[index]['name']}';
+                      selectedCategory = sortedFoodList[index]['category'];
                       selectedDate = DateTime.parse(
-                        foodList[index]['expiry_date'],
+                        sortedFoodList[index]['expiry_date'],
                       );
-                      foodAmountController.text = (foodList[index]['amount'])
-                          .toString();
-                      selectedUnit = foodList[index]['unit'];
+                      foodAmountController.text =
+                          (sortedFoodList[index]['amount']).toString();
+                      selectedUnit = sortedFoodList[index]['unit'];
                       foodNotecontroller.text =
-                          '${foodList[index]['note']}' ?? '';
-                      _dialogBuilder(context, 'edit', foodList[index]);
+                          '${sortedFoodList[index]['note']}' ?? '';
+                      _dialogBuilder(context, 'edit', sortedFoodList[index]);
                     },
                     icon: Icon(Icons.edit),
                   ),
@@ -344,7 +354,7 @@ class _HomePageState extends State<HomePage> {
                           return AlertDialog(
                             title: Text('Delete Window'),
                             content: Text(
-                              'Are you sure you want to delete ${foodList[index]['name']}? \nYou cannot undone this action.',
+                              'Are you sure you want to delete ${sortedFoodList[index]['name']}? \nYou cannot undone this action.',
                             ),
                             actions: [
                               ElevatedButton(
@@ -357,12 +367,14 @@ class _HomePageState extends State<HomePage> {
                                 onPressed: () async {
                                   try {
                                     print(
-                                      'A notification for ${foodList[index]['name']} '
-                                      'with ID ${foodList[index]['id']} is deleted.',
+                                      'A notification for ${sortedFoodList[index]['name']} '
+                                      'with ID ${sortedFoodList[index]['id']} is deleted.',
                                     );
-                                    await deleteFood(foodList[index]['id']);
+                                    await deleteFood(
+                                      sortedFoodList[index]['id'],
+                                    );
                                     await cancelNotification(
-                                      foodList[index]['id'],
+                                      sortedFoodList[index]['id'],
                                     );
                                     // final pendingNotifications =
                                     //     await flutterLocalNotificationsPlugin
